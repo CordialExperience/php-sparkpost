@@ -4,22 +4,29 @@ namespace SparkPost;
 
 use Http\Client\HttpClient;
 use Http\Client\HttpAsyncClient;
-use GuzzleHttp\Psr7\Request as Request;
+use Http\Discovery\MessageFactoryDiscovery;
+use Http\Message\RequestFactory;
+use Psr\Http\Message\RequestInterface;
 
 class SparkPost
 {
     /**
-     * Library version, used for setting User-Agent.
+     * @var string Library version, used for setting User-Agent.
      */
-    private $version = '2.0.0';
+    private $version = '2.0.2';
 
     /**
-     * HttpClient used to make requests.
+     * @var HttpClient|HttpAsyncClient used to make requests.
      */
-    public $httpClient;
+    private $httpClient;
 
     /**
-     * Options for requests.
+     * @var RequestFactory
+     */
+    private $messageFactory;
+
+    /**
+     * @var array Options for requests.
      */
     private $options;
 
@@ -36,7 +43,7 @@ class SparkPost
     ];
 
     /**
-     * Instance of Transmission class.
+     * @var Transmission Instance of Transmission class.
      */
     public $transmissions;
 
@@ -57,11 +64,11 @@ class SparkPost
 
     /**
      * Sets up the SparkPost instance.
-     * 
+     *
      * @param HttpClient $httpClient - An httplug client or adapter
      * @param array      $options    - An array to overide default options or a string to be used as an API key
      */
-    public function __construct(HttpClient $httpClient, $options)
+    public function __construct($httpClient, array $options)
     {
         $this->setOptions($options);
         $this->setHttpClient($httpClient);
@@ -75,8 +82,8 @@ class SparkPost
      * @param string $uri
      * @param array  $payload - either used as the request body or url query params
      * @param array  $headers
-     * 
-     * @return SparkPostPromise or SparkPostResponse depending on sync or async request
+     *
+     * @return SparkPostPromise|SparkPostResponse Promise or Response depending on sync or async request
      */
     public function request($method = 'GET', $uri = '', $payload = [], $headers = [])
     {
@@ -94,7 +101,7 @@ class SparkPost
      * @param string $uri
      * @param array  $payload
      * @param array  $headers
-     * 
+     *
      * @return SparkPostResponse
      *
      * @throws SparkPostException
@@ -116,7 +123,7 @@ class SparkPost
      * @param string $uri
      * @param array  $payload
      * @param array  $headers
-     * 
+     *
      * @return SparkPostPromise
      */
     public function asyncRequest($method = 'GET', $uri = '', $payload = [], $headers = [])
@@ -130,7 +137,7 @@ class SparkPost
         }
     }
 
-    /** 
+    /**
      * Builds request from given params.
      *
      * @param string $method
@@ -138,7 +145,7 @@ class SparkPost
      * @param array  $payload
      * @param array  $headers
      *
-     * @return GuzzleHttp\Psr7\Request - A Psr7 compliant request
+     * @return RequestInterface
      */
     public function buildRequest($method, $uri, $payload, $headers)
     {
@@ -154,11 +161,8 @@ class SparkPost
 
         $url = $this->getUrl($uri, $params);
         $headers = $this->getHttpHeaders($headers);
-error_log(json_encode($body), 3, '/tmp/sparkpost.out');
-error_log($method, 3, '/tmp/sparkpost.out');
-error_log($url, 3, '/tmp/sparkpost.out');
-error_log(print_r($headers,true), 3, '/tmp/sparkpost.out');
-        return new Request($method, $url, $headers, json_encode($body));
+
+        return $this->getMessageFactory()->createRequest($method, $url, $headers, json_encode($body));
     }
 
     /**
@@ -209,13 +213,17 @@ error_log(print_r($headers,true), 3, '/tmp/sparkpost.out');
         return $options['protocol'].'://'.$options['host'].($options['port'] ? ':'.$options['port'] : '').'/api/'.$options['version'].'/'.$path.($paramsString ? '?'.$paramsString : '');
     }
 
-    /** 
+    /**
      * Sets $httpClient to be used for request.
      *
-     * @param Http\Client\HttpClient $httpClient - the client to be used for request
+     * @param HttpClient|HttpAsyncClient $httpClient - the client to be used for request
      */
-    public function setHttpClient(HttpClient $httpClient)
+    public function setHttpClient($httpClient)
     {
+        if (!($httpClient instanceof HttpAsyncClient || $httpClient instanceof HttpClient)) {
+            throw new \LogicException(sprintf('Parameter to SparkPost::setHttpClient must be instance of "%s" or "%s"', HttpClient::class, HttpAsyncClient::class));
+        }
+
         $this->httpClient = $httpClient;
     }
 
@@ -255,5 +263,29 @@ error_log(print_r($headers,true), 3, '/tmp/sparkpost.out');
         $this->subaccounts = new Subaccounts($this);
         $this->suppressionlist = new SuppressionList($this);
         $this->sendingdomains = new SendingDomains($this);
+    }
+
+    /**
+     * @return RequestFactory
+     */
+    private function getMessageFactory()
+    {
+        if (!$this->messageFactory) {
+            $this->messageFactory = MessageFactoryDiscovery::find();
+        }
+
+        return $this->messageFactory;
+    }
+
+    /**
+     * @param RequestFactory $messageFactory
+     *
+     * @return SparkPost
+     */
+    public function setMessageFactory(RequestFactory $messageFactory)
+    {
+        $this->messageFactory = $messageFactory;
+
+        return $this;
     }
 }
