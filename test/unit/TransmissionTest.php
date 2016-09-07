@@ -4,11 +4,9 @@ namespace SparkPost\Test;
 
 use SparkPost\SparkPost;
 use Mockery;
-use SparkPost\Test\TestUtils\ClassUtils;
 
 class TransmissionTest extends \PHPUnit_Framework_TestCase
 {
-    private static $utils;
     private $clientMock;
     /** @var SparkPost */
     private $resource;
@@ -59,7 +57,6 @@ class TransmissionTest extends \PHPUnit_Framework_TestCase
         $this->clientMock = Mockery::mock('Http\Adapter\Guzzle6\Client');
 
         $this->resource = new SparkPost($this->clientMock, ['key' => 'SPARKPOST_API_KEY', 'async' => false]);
-        self::$utils = new ClassUtils($this->resource);
     }
 
     public function tearDown()
@@ -140,6 +137,31 @@ class TransmissionTest extends \PHPUnit_Framework_TestCase
         $responseBodyMock->shouldReceive('__toString')->andReturn(json_encode($responseBody));
 
         $response = $this->resource->transmissions->post($this->postTransmissionPayload);
+
+        $this->assertEquals($responseBody, $response->getBody());
+        $this->assertEquals(200, $response->getStatusCode());
+    }
+
+    public function testPostWithRecipientList()
+    {
+        $postTransmissionPayload = $this->postTransmissionPayload;
+        $postTransmissionPayload['recipients'] = ['list_id' => 'SOME_LIST_ID'];
+
+        $responseMock = Mockery::mock('Psr\Http\Message\ResponseInterface');
+        $responseBodyMock = Mockery::mock();
+
+        $responseBody = ['results' => 'yay'];
+
+        $this->clientMock->shouldReceive('sendRequest')->
+            once()->
+            with(Mockery::type('GuzzleHttp\Psr7\Request'))->
+            andReturn($responseMock);
+
+        $responseMock->shouldReceive('getStatusCode')->andReturn(200);
+        $responseMock->shouldReceive('getBody')->andReturn($responseBodyMock);
+        $responseBodyMock->shouldReceive('__toString')->andReturn(json_encode($responseBody));
+
+        $response = $this->resource->transmissions->post();
 
         $this->assertEquals($responseBody, $response->getBody());
         $this->assertEquals(200, $response->getStatusCode());
