@@ -54,11 +54,6 @@ class SparkPost
     private $endpointInstances = [];
 
     /**
-     * @var Transmission Instance of Transmission class
-     */
-    public $transmissions;
-
-    /**
      * Sets up the SparkPost instance.
      *
      * @param HttpClient $httpClient - An httplug client or adapter
@@ -376,8 +371,9 @@ class SparkPost
 
             // If we have the methodName in our list of endpoints, then look for a class or create a ResourceBase
             if (isset($this->endpoints[$methodName])) {
-                if (class_exists($this->endpoints[$methodName])) {
-                    $this->endpointInstances[$methodName] = new $this->endpoints[$methodName]();
+                $className = __NAMESPACE__ . '\\' . $this->endpoints[$methodName];
+                if (class_exists($className)) {
+                    $this->endpointInstances[$methodName] = new $className($this);
                 } else {
                     $this->endpointInstances[$methodName] = new ResourceBase($this, $this->endpoints[$methodName]);
                 }
