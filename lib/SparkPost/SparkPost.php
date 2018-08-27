@@ -377,7 +377,7 @@ class SparkPost
             // If we have the methodName in our list of endpoints, then look for a class or create a ResourceBase
             if (isset($this->endpoints[$methodName])) {
                 if (class_exists($this->endpoints[$methodName])) {
-                    $this->endpointInstances[$methodName] = new $this->endpoints[$methodName];
+                    $this->endpointInstances[$methodName] = new $this->endpoints[$methodName]();
                 } else {
                     $this->endpointInstances[$methodName] = new ResourceBase($this, $this->endpoints[$methodName]);
                 }
