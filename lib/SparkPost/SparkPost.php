@@ -382,7 +382,7 @@ class SparkPost
                 throw new \Exception('invalid endpoint');
             }
         }
-        return $this->endpointInstances[$methodName];       
+        return $this->endpointInstances[$methodName];
     }
 
 }
