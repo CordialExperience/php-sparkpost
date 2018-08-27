@@ -47,7 +47,8 @@ class SparkPost
     private $endpoints = [
         'transmissions' => 'Transmission',
         'subaccounts' => 'subaccounts',
-        'sendingdomains' => 'sending-domains'
+        'sendingdomains' => 'sending-domains',
+        'suppressionlist' => 'suppression-list'
     ];
 
     private $endpointInstances = [];
