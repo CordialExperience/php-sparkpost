@@ -44,6 +44,14 @@ class SparkPost
         'retries' => 0
     ];
 
+    private $endpoints = [
+        'transmissions' => 'Transmission',
+        'subaccounts' => 'subaccounts',
+        'sendingdomains' => 'sending-domains'
+    ];
+
+    private $endpointInstances = [];
+
     /**
      * @var Transmission Instance of Transmission class
      */
@@ -59,7 +67,6 @@ class SparkPost
     {
         $this->setOptions($options);
         $this->setHttpClient($httpClient);
-        $this->setupEndpoints();
     }
 
     /**
@@ -333,14 +340,6 @@ class SparkPost
     }
 
     /**
-     * Sets up any endpoints to custom classes e.g. $this->transmissions.
-     */
-    private function setupEndpoints()
-    {
-        $this->transmissions = new Transmission($this);
-    }
-
-    /**
      * @return RequestFactory
      */
     private function getMessageFactory()
@@ -363,4 +362,30 @@ class SparkPost
 
         return $this;
     }
+
+    /**
+     * @param string $methodName
+     *
+     * @return mixed class
+     */
+    public function __get($methodName)
+    {
+        // If we don't have an existing instance, try to create one
+        if (!isset($this->endpointInstances[$methodName])) {
+
+            // If we have the methodName in our list of endpoints, then look for a class or create a ResourceBase
+            if (isset($this->endpoints[$methodName])) {
+                if (class_exists($this->endpoints[$methodName])) {
+                    $this->endpointInstances[$methodName] = new $this->endpoints[$methodName];
+                } else {
+                    $this->endpointInstances[$methodName] = new ResourceBase($this, $this->endpoints[$methodName]);
+                }
+            } else {
+                // Let the getter know the endpoint is invalid
+                throw new \Exception('invalid endpoint');
+            }
+        }
+        return $this->endpointInstances[$methodName];       
+    }
+
 }
