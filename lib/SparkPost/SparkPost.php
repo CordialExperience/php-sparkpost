@@ -51,6 +51,21 @@ class SparkPost
     public $transmissions;
 
     /**
+     * Instance of Subaccount class.
+     */
+    public $subaccounts;
+
+    /**
+     * Instrance of SuppressionList class.
+     */
+    public $suppressionlist;
+
+    /**
+     *
+     */
+    public $sendingdomains;
+
+    /**
      * Sets up the SparkPost instance.
      *
      * @param HttpClient $httpClient - An httplug client or adapter
@@ -344,6 +359,9 @@ class SparkPost
     private function setupEndpoints()
     {
         $this->transmissions = new Transmission($this);
+        $this->subaccounts = new Subaccounts($this);
+        $this->suppressionlist = new SuppressionList($this);
+        $this->sendingdomains = new SendingDomains($this);
     }
 
     /**
