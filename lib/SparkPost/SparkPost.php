@@ -130,7 +130,6 @@ class SparkPost
     {
         if ($this->httpClient instanceof HttpAsyncClient) {
             $request = $this->buildRequest($method, $uri, $payload, $headers);
-
             return new SparkPostPromise($this->httpClient->sendAsyncRequest($request));
         } else {
             throw new \Exception('Your http client does not support asynchronous requests. Please use a different client or use synchronous requests.');
@@ -167,7 +166,10 @@ class SparkPost
             '\f' => '',
         ];
         $body = strtr(json_encode($body), $jsonReplace);
-
+        if (!empty($this->options['compression']) && $this->options['compression'] === true) {
+            $headers['Content-Encoding'] = 'gzip';
+            $body = gzencode($body);
+        }
         return $this->getMessageFactory()->createRequest($method, $url, $headers, $body);
     }
 
