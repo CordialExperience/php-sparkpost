@@ -40,6 +40,7 @@ class SparkPost
         'key' => '',
         'version' => 'v1',
         'async' => true,
+        'compression' => false
     ];
 
     /**
@@ -166,7 +167,7 @@ class SparkPost
             '\f' => '',
         ];
         $body = strtr(json_encode($body), $jsonReplace);
-        if (!empty($this->options['compression']) && $this->options['compression'] === true) {
+        if (!empty($this->options['compression']) && $this->options['compression'] == true) {
             $headers['Content-Encoding'] = 'gzip';
             $body = gzencode($body);
         }
